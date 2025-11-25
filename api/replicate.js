@@ -1,8 +1,4 @@
-// Serverless function pour Replicate (évite d'exposer la clé API côté client)
-// Compatible avec Vercel, Netlify, ou autre
-
-const REPLICATE_API_TOKEN = 'r8_PnAGdgN1WioHGTLTNLaipS8uIdAJYDH4ZV3LS3';
-
+// Serverless function pour Replicate
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,10 +13,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
+  // Token depuis variable d'environnement OU en dur (fallback)
+  const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN || 'r8_PnAGdgN1WioHGTLTNLaipS8uIdAJYDH4ZV3LS3';
+
   try {
     const { sofaImageUrl, fabricImageUrl, prompt } = req.body;
 
-    // Appel à Replicate Nano-Banana-Pro
+    console.log('Calling Replicate with:', { sofaImageUrl, fabricImageUrl });
+
     const response = await fetch(
       'https://api.replicate.com/v1/models/google/nano-banana-pro/predictions',
       {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
         headers: {
           'Authorization': `Bearer ${REPLICATE_API_TOKEN}`,
           'Content-Type': 'application/json',
-          'Prefer': 'wait', // Attend le résultat
+          'Prefer': 'wait',
         },
         body: JSON.stringify({
           input: {
@@ -44,17 +44,20 @@ export default async function handler(req, res) {
     );
 
     const data = await response.json();
+    console.log('Replicate response:', data);
 
     if (!response.ok) {
-      throw new Error(data.detail || data.error || 'Erreur Replicate');
+      console.error('Replicate error:', data);
+      return res.status(response.status).json({ 
+        message: data.detail || data.error || 'Erreur Replicate' 
+      });
     }
 
-    // Replicate retourne l'image dans output
     const imageUrl = Array.isArray(data.output) ? data.output[0] : data.output;
 
     return res.status(200).json({ imageUrl });
   } catch (error) {
-    console.error('Replicate error:', error);
+    console.error('Server error:', error);
     return res.status(500).json({ message: error.message });
   }
 }
