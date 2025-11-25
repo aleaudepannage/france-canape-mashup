@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   // Token depuis variable d'environnement OU en dur (fallback)
-  const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN || 'r8_PnAGdgN1WioHGTLTNLaipS8uIdAJYDH4ZV3LS3';
+  const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 
   try {
     const { sofaImageUrl, fabricImageUrl, prompt } = req.body;
