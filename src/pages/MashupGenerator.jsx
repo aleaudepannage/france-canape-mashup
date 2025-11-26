@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import  { useState, useRef } from "react";
 import { uploadFile, generateSofaWithFabric } from "@/api/localServices";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,7 @@ export default function MashupGenerator() {
   const [error, setError] = useState(null);
   const [dragOverTissu, setDragOverTissu] = useState(false);
   const [dragOverCanape, setDragOverCanape] = useState(false);
+  const [userDetails, setUserDetails] = useState("");
 
   const tissuCameraRef = useRef(null);
   const tissuGalleryRef = useRef(null);
@@ -110,6 +111,7 @@ export default function MashupGenerator() {
       const result = await generateSofaWithFabric({
         sofaImageUrl: canapeUrl,
         fabricImageUrl: tissuUrl,
+        userDetails: userDetails,
         onProgress: (msg) => setGenerationProgress(msg)
       });
 
@@ -155,6 +157,7 @@ export default function MashupGenerator() {
     setGeneratedImage(null);
     setError(null);
     setGenerationProgress("");
+    setUserDetails("");
   };
 
   return (
@@ -336,6 +339,23 @@ export default function MashupGenerator() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Champ détails supplémentaires */}
+        <div className="max-w-2xl mx-auto mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            💡 Détails supplémentaires (optionnel)
+          </label>
+          <textarea
+            value={userDetails}
+            onChange={(e) => setUserDetails(e.target.value)}
+            placeholder="Ex: couleur camel, blanc éclatant, texture velours, aspect cuir vieilli..."
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition-all resize-none"
+            rows={2}
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            Ajoutez des précisions sur la couleur ou la texture souhaitée
+          </p>
         </div>
 
         <div className="text-center mb-8">

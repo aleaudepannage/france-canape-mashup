@@ -31,8 +31,13 @@ export async function uploadFile(file) {
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Génération d'image avec Replicate via API serverless (avec polling)
-export async function generateSofaWithFabric({ sofaImageUrl, fabricImageUrl, onProgress }) {
-  const prompt = `A photorealistic sofa with the exact fabric pattern and texture from the reference image applied seamlessly to its upholstery. The sofa should maintain its original shape and lighting while the fabric covers all cushions and surfaces naturally. High quality, professional furniture photography.`;
+export async function generateSofaWithFabric({ sofaImageUrl, fabricImageUrl, userDetails, onProgress }) {
+  let prompt = `A photorealistic sofa with the exact fabric pattern and texture from the reference image applied seamlessly to its upholstery. The sofa should maintain its original shape and lighting while the fabric covers all cushions and surfaces naturally. High quality, professional furniture photography.`;
+  
+  // Ajouter les détails utilisateur au prompt si fournis
+  if (userDetails && userDetails.trim()) {
+    prompt += ` Additional details: ${userDetails.trim()}.`;
+  }
 
   // 1. Lancer la génération
   const startResponse = await fetch('/api/replicate', {
