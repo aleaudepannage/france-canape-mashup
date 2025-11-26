@@ -104,12 +104,13 @@ export default function MashupGenerator() {
       const tissuUpload = await uploadFile(tissuImage);
       const tissuUrl = tissuUpload.file_url;
 
-      setGenerationProgress("🎨 Génération avec Nano-Banana-Pro (60-120 sec)...");
+      setGenerationProgress("🎨 Génération avec Nano-Banana-Pro...");
 
-      // Appel à Replicate via notre API
+      // Appel à Replicate via notre API avec polling
       const result = await generateSofaWithFabric({
         sofaImageUrl: canapeUrl,
-        fabricImageUrl: tissuUrl
+        fabricImageUrl: tissuUrl,
+        onProgress: (msg) => setGenerationProgress(msg)
       });
 
       if (result.status === "error") {
