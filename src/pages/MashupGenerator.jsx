@@ -349,7 +349,7 @@ export default function MashupGenerator() {
           <textarea
             value={userDetails}
             onChange={(e) => setUserDetails(e.target.value)}
-            placeholder="Ex: couleur camel, blanc éclatant, texture velours, aspect cuir vieilli..."
+            placeholder="Ex: couleur camel, blanc éclatant, texture velours..."
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition-all resize-none"
             rows={2}
           />
