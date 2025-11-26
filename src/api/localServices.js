@@ -24,7 +24,73 @@ export async function uploadFile(file) {
   }
 
   const data = await response.json();
-  return { file_url: data.secure_url };
+  return { file_url: data.secure_url, public_id: data.public_id };
+}
+
+// Upload d'une image depuis URL vers Cloudinary (pour sauvegarder les résultats)
+export async function uploadFromUrl(imageUrl) {
+  const formData = new FormData();
+  formData.append('file', imageUrl);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('folder', 'france-canape-results');
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    {
+      method: 'POST',
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Erreur upload Cloudinary');
+  }
+
+  const data = await response.json();
+  
+  // Retourner l'URL en WebP (Cloudinary convertit automatiquement)
+  const webpUrl = data.secure_url.replace(/\.[^.]+$/, '.webp');
+  const thumbnailUrl = data.secure_url.replace('/upload/', '/upload/w_200,h_200,c_fill,f_webp/');
+  
+  return { 
+    imageUrl: webpUrl, 
+    thumbnailUrl,
+    public_id: data.public_id 
+  };
+}
+
+// Gestion de l'historique dans LocalStorage
+const HISTORY_KEY = 'france-canape-history';
+const MAX_HISTORY = 20;
+
+export function getHistory() {
+  try {
+    const history = localStorage.getItem(HISTORY_KEY);
+    return history ? JSON.parse(history) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addToHistory(item) {
+  try {
+    const history = getHistory();
+    const newItem = {
+      ...item,
+      id: Date.now(),
+      createdAt: new Date().toISOString(),
+    };
+    const newHistory = [newItem, ...history].slice(0, MAX_HISTORY);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+    return newHistory;
+  } catch {
+    return [];
+  }
+}
+
+export function clearHistory() {
+  localStorage.removeItem(HISTORY_KEY);
 }
 
 // Helper pour attendre

@@ -1,8 +1,8 @@
-import  { useState, useRef } from "react";
-import { uploadFile, generateSofaWithFabric } from "@/api/localServices";
+import { useState, useRef, useEffect } from "react";
+import { uploadFile, generateSofaWithFabric, uploadFromUrl, addToHistory, getHistory } from "@/api/localServices";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Camera, Upload, Wand2, Download, RefreshCw, Sparkles, Loader2, AlertCircle } from "lucide-react";
+import { Camera, Upload, Wand2, Download, RefreshCw, Sparkles, Loader2, AlertCircle, History, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function MashupGenerator() {
@@ -17,8 +17,15 @@ export default function MashupGenerator() {
   const [dragOverTissu, setDragOverTissu] = useState(false);
   const [dragOverCanape, setDragOverCanape] = useState(false);
   const [userDetails, setUserDetails] = useState("");
+  const [history, setHistory] = useState([]);
+  const [cloudinaryUrl, setCloudinaryUrl] = useState(null);
 
   const tissuCameraRef = useRef(null);
+  
+  // Charger l'historique au démarrage
+  useEffect(() => {
+    setHistory(getHistory());
+  }, []);
   const tissuGalleryRef = useRef(null);
   const canapeCameraRef = useRef(null);
   const canapeGalleryRef = useRef(null);
@@ -120,6 +127,24 @@ export default function MashupGenerator() {
       }
 
       setGeneratedImage(result.imageUrl);
+      setGenerationProgress("💾 Sauvegarde sur Cloudinary...");
+
+      // Upload sur Cloudinary et sauvegarder dans l'historique
+      try {
+        const cloudinaryResult = await uploadFromUrl(result.imageUrl);
+        setCloudinaryUrl(cloudinaryResult.imageUrl);
+        
+        const newHistory = addToHistory({
+          imageUrl: cloudinaryResult.imageUrl,
+          thumbnailUrl: cloudinaryResult.thumbnailUrl,
+          userDetails: userDetails,
+        });
+        setHistory(newHistory);
+      } catch (uploadErr) {
+        console.error("Erreur sauvegarde Cloudinary:", uploadErr);
+        // On continue quand même, l'image est affichée
+      }
+
       setGenerationProgress("✅ Terminé !");
       
     } catch (err) {
@@ -130,16 +155,17 @@ export default function MashupGenerator() {
     }
   };
 
-  const handleDownload = async () => {
-    if (!generatedImage) return;
+  const handleDownload = async (imageUrl = null) => {
+    const urlToDownload = imageUrl || cloudinaryUrl || generatedImage;
+    if (!urlToDownload) return;
     
     try {
-      const response = await fetch(generatedImage);
+      const response = await fetch(urlToDownload);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `canape-mashup-${Date.now()}.png`;
+      link.download = `canape-mashup-${Date.now()}.webp`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -158,6 +184,15 @@ export default function MashupGenerator() {
     setError(null);
     setGenerationProgress("");
     setUserDetails("");
+    setCloudinaryUrl(null);
+  };
+
+  const handleSelectFromHistory = (item) => {
+    setGeneratedImage(item.imageUrl);
+    setCloudinaryUrl(item.imageUrl);
+    if (item.userDetails) {
+      setUserDetails(item.userDetails);
+    }
   };
 
   return (
@@ -432,6 +467,46 @@ export default function MashupGenerator() {
                 <p className="text-sm text-gray-600 text-center">
                   ✨ Votre canapé personnalisé est prêt !
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Historique */}
+        {history.length > 0 && (
+          <Card className="mt-8 bg-white/80 backdrop-blur shadow-xl border-2 border-gray-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <History className="w-5 h-5 text-gray-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Historique</h2>
+                <span className="text-sm text-gray-500">({history.length} images)</span>
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                {history.map((item) => (
+                  <div
+                    key={item.id}
+                    className="relative group cursor-pointer"
+                    onClick={() => handleSelectFromHistory(item)}
+                  >
+                    <img
+                      src={item.thumbnailUrl}
+                      alt="Historique"
+                      className="w-full aspect-square object-cover rounded-lg shadow-md group-hover:shadow-xl transition-all duration-200 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 rounded-lg flex items-center justify-center">
+                      <Download 
+                        className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(item.imageUrl);
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
